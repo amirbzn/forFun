@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Request: Yessmine</title>
+    <style>
+        :root {
+            --bg: #fff0f3;
+            --card-bg: #ffffff;
+            --pink-main: #ff4d6d;
+            --pink-glow: rgba(255, 77, 109, 0.2);
+            --text-dark: #2b2d42;
+            --text-muted: #8d99ae;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            /* Creates the 3D depth for the tilting effect */
+            perspective: 1200px; 
+            background-image: 
+                radial-gradient(circle at 20% 30%, #ffe5ec 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, #ffc2d1 0%, transparent 40%);
+        }
+
+        /* The Viewport Canvas that tilts */
+        .infinite-canvas {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Minimal Trendy Pink Card */
+        .main-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 77, 109, 0.15);
+            padding: 4rem 3rem;
+            border-radius: 32px;
+            box-shadow: 0 30px 70px rgba(255, 77, 109, 0.08);
+            text-align: center;
+            max-width: 440px;
+            width: 90%;
+            transform: translateZ(50px); /* Lifts card slightly off the canvas */
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .ui-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--pink-main);
+            border-radius: 50%;
+            margin: 0 auto 1.5rem auto;
+            animation: pulse 1.8s infinite;
+        }
+
+        h1 {
+            color: var(--text-dark);
+            font-size: 1.9rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 1rem;
+            line-height: 1.25;
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 3rem;
+        }
+
+        .interactive-zone {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1.25rem;
+            min-height: 60px;
+            position: relative;
+        }
+
+        button {
+            font-family: inherit;
+            padding: 0.95rem 2.2rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            border: none;
+        }
+
+        #yesBtn {
+            background: var(--pink-main);
+            color: #ffffff;
+            box-shadow: 0 8px 24px var(--pink-glow);
+        }
+
+        #yesBtn:hover {
+            background: #ff3355;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(255, 77, 109, 0.35);
+        }
+
+        #noBtn {
+            background: #f8f9fa;
+            color: var(--text-muted);
+            border: 1px solid #e9ecef;
+            position: absolute;
+            left: 56%;
+            white-space: nowrap;
+            /* Handles the smooth transition when resetting position */
+            transition: transform 0.1s ease, left 0.4s cubic-bezier(0.25, 1, 0.5, 1), top 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Success Icon */
+        .check-icon {
+            display: none;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.5; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.5; }
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Everything inside this div tilts visually -->
+    <div class="infinite-canvas" id="canvas">
+        <div class="main-card" id="card">
+            <div class="check-icon" id="successCheck">✨🎧</div>
+            <div class="ui-dot" id="badgeDot"></div>
+            
+            <h1 id="headline">What about a coffee Yessmine?</h1>
+            <p id="subtext">Let's find a cool spot and grab a coffee sometime this week. Are you free?</p>
+            
+            <div class="interactive-zone" id="btnGroup">
+                <button id="yesBtn">Let's do it</button>
+                <button id="noBtn">No thanks</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const card = document.getElementById('card');
+        const noBtn = document.getElementById('noBtn');
+        const yesBtn = document.getElementById('yesBtn');
+        const headline = document.getElementById('headline');
+        const subtext = document.getElementById('subtext');
+        const badgeDot = document.getElementById('badgeDot');
+        const successCheck = document.getElementById('successCheck');
+        const btnGroup = document.getElementById('btnGroup');
+
+        let interactionCount = 0;
+
+        // Dynamic tilt directions to keep her guessing
+        const angles = [
+            { x: 15, y: -25, moveLeft: "15%", moveTop: "20%" },
+            { x: -20, y: 20, moveLeft: "75%", moveTop: "70%" },
+            { x: 25, y: 25, moveLeft: "20%", moveTop: "75%" },
+            { x: -15, y: -25, moveLeft: "80%", moveTop: "15%" }
+        ];
+
+        function handlePrankMove() {
+            // Get the current configuration loop index
+            const currentTilt = angles[interactionCount % angles.length];
+            interactionCount++;
+
+            // 1. Tilt the entire background canvas in 3D space
+            canvas.style.transform = `rotateX(${currentTilt.x}deg) rotateY(${currentTilt.y}deg)`;
+
+            // 2. Smoothly fling the "No" button away to a separate screen coordinate
+            noBtn.style.position = 'fixed';
+            noBtn.style.left = currentTilt.moveLeft;
+            noBtn.style.top = currentTilt.moveTop;
+
+            // 3. Update the description subtle hints
+            if (interactionCount === 1) {
+                subtext.innerText = "Whoops, the canvas tilted! Try targeting the left side.";
+            } else if (interactionCount === 3) {
+                subtext.innerText = "Gravity parameters are currently unstable for 'No'. Select 'Let's do it'.";
+            }
+        }
+
+        // Trigger movement on cursor hover or mobile finger tap
+        noBtn.addEventListener('mouseover', handlePrankMove);
+        noBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handlePrankMove();
+        });
+
+        // Successful Resolution 
+        yesBtn.addEventListener('click', () => {
+            // Reset the canvas tilt cleanly back to flat normal
+            canvas.style.transform = "rotateX(0deg) rotateY(0deg)";
+            
+            // Transform layout
+            btnGroup.style.display = 'none';
+            badgeDot.style.display = 'none';
+            
+            // Show custom landing messages
+            successCheck.style.display = 'block';
+            headline.innerText = "Perfect Choice.";
+            subtext.innerHTML = "<strong>Send me ur tel number on insta</strong> so we can figure out the time and spot! 😉";
+            
+            // Polish card style on finish
+            card.style.borderColor = "var(--pink-main)";
+            card.style.boxShadow = "0 30px 80px rgba(255, 77, 109, 0.2)";
+        });
+    </script>
+</body>
+</html>
